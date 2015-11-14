@@ -7,7 +7,7 @@ error_defs! {
             => "short description",
         VariantB
             => "another short description" ("long description, 23 == {}", 23),
-        VariantC { arg: u32 }
+        VariantC { arg0: u32, arg1: u32 }
             => "another short description" ("long description, 23 == {}", 23),
     }
 }
@@ -15,7 +15,7 @@ error_defs! {
 fn main() {
     use std::error::Error;
 
-    let e = Example::VariantC { arg: 23 };
+    let e = Example::VariantC { arg0: 45, arg1: 23 };
     println!("fmt::Debug::fmt           => {:?}", e);
     println!("fmt::Display::fmt         => {}", e);
     println!("error::Error::description => {}", e.description());
