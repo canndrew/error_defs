@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! error_defs {
     ($(error $type_name:ident {
-        $($variant_name:ident $({$($memb_id:ident: $memb_ty:ty),*})*
+        $($variant_name:ident $({$($memb_id:ident $(#[$memb_attr:ident])*: $memb_ty:ty),*})*
             => $short:tt $(($long:tt $(, $long_arg:expr)*))*,)*
     })*) => {
         $(
@@ -13,8 +13,9 @@ macro_rules! error_defs {
                 #[allow(unused_variables)]
                 fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                     match self {
-                        $(&$type_name::$variant_name $({$($memb_id),*})* => {
-                            try!(write!(f, concat!(stringify!($variant_name), " /* {} */"), self));
+                        $(&$type_name::$variant_name $({$(ref $memb_id),*})* => {
+                            try!(f.debug_struct(stringify!($variant_name))$($(.field(stringify!($memb_id), $memb_id))*)*.finish());
+                            try!(write!(f, " /* {} */", self));
                         }),*
                     }
                     Ok(())
@@ -25,7 +26,7 @@ macro_rules! error_defs {
                 #[allow(unused_variables)]
                 fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                     match self {
-                        $(&$type_name::$variant_name $({$($memb_id),*})* => {
+                        $(&$type_name::$variant_name $({$(ref $memb_id),*})* => {
                             try!(write!(f, $short));
                             $(try!(write!(f, concat!(". ", $long) $(, $long_arg)*));)*
                         }),*
@@ -38,24 +39,33 @@ macro_rules! error_defs {
                 #[allow(unused_variables)]
                 fn description(&self) -> &str {
                     match self {
-                        $(&$type_name::$variant_name $({$($memb_id),*})* => concat!($short)),*
+                        $(&$type_name::$variant_name $({$(ref $memb_id),*})* => concat!($short)),*
                     }
                 }
 
+                #[allow(unused_variables, unreachable_code)]
                 fn cause(&self) -> Option<&::std::error::Error> {
-                    None
+                    match self {
+                        $(&$type_name::$variant_name $({$(ref $memb_id),*})* => {
+                            $($($(
+                                let ret: &$memb_ty = ::std::convert::From::$memb_attr($memb_id);
+                                return Some(ret);
+                            )*)*)*
+                            None
+                        }),*
+                    }
                 }
             }
 
-            /*
-            $($($(
-                impl ::std::convert::From for $type_name {
-                      fn from(e: ::std::io::Error) -> $type_name {
-                            $type_name::$variant_name 
+            $($($($(
+                impl ::std::convert::From<$memb_ty> for $type_name {
+                      fn $memb_attr(e: ::std::io::Error) -> $type_name {
+                            $type_name::$variant_name {
+                                $memb_id: e
+                            }
                       }
                 }
-            )*)*)*
-            */
+            )*)*)*)*
         )*
     }
 }
