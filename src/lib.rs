@@ -1,15 +1,17 @@
 #[macro_export]
 macro_rules! error_defs {
-    ($(error $type_name:ident {
+    ($(error $type_name:ident$(<$($generic:ident$(: $bound:ident$( + $extra_bound_base:ident$(::$extra_bound_more:ident)*)*)*),*>)* {
         $($variant_name:ident $({$($memb_id:ident $(#[$memb_attr:ident])*: $memb_ty:ty),*})*
             => $short:tt $(($long:tt $(, $long_arg:expr)*))*,)*
     })*) => {
         $(
-            pub enum $type_name {
-                $($variant_name $({$($memb_id: $memb_ty),*})*,)*
+            pub enum $type_name$(<$($generic$(: $bound$( + $extra_bound_base$(::$extra_bound_more)*)*)*),*>)* {
+                $(
+                    $variant_name $({$($memb_id: $memb_ty),*})*
+                ,)*
             }
 
-            impl ::std::fmt::Debug for $type_name {
+            impl$(<$($generic: ::std::fmt::Debug$( + $bound$( + $extra_bound_base$(::$extra_bound_more)*)*)*),*>)* ::std::fmt::Debug for $type_name$(<$($generic),*>)* {
                 #[allow(unused_variables)]
                 fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                     match self {
@@ -22,7 +24,7 @@ macro_rules! error_defs {
                 }
             }
 
-            impl ::std::fmt::Display for $type_name {
+            impl$(<$($generic$(: $bound$( + $extra_bound_base$(::$extra_bound_more)*)*)*),*>)* ::std::fmt::Display for $type_name$(<$($generic),*>)* {
                 #[allow(unused_variables)]
                 fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                     match self {
@@ -35,7 +37,7 @@ macro_rules! error_defs {
                 }
             }
 
-            impl ::std::error::Error for $type_name {
+            impl$(<$($generic: ::std::any::Any + ::std::fmt::Debug$( + $bound$( + $extra_bound_base$(::$extra_bound_more)*)*)*),*>)* ::std::error::Error for $type_name$(<$($generic),*>)* {
                 #[allow(unused_variables)]
                 fn description(&self) -> &str {
                     match self {
@@ -48,25 +50,25 @@ macro_rules! error_defs {
                     match self {
                         $(&$type_name::$variant_name $({$(ref $memb_id),*})* => {
                             $($($(
-                                let ret: &$memb_ty = ::std::convert::From::$memb_attr($memb_id);
-                                return Some(ret);
+                                let $memb_attr = {
+                                    let ret: &$memb_ty = $memb_id;
+                                    return Some(ret)
+                                };
                             )*)*)*
                             None
                         }),*
                     }
                 }
             }
-
-            $($($($(
-                impl ::std::convert::From<$memb_ty> for $type_name {
-                      fn $memb_attr(e: ::std::io::Error) -> $type_name {
-                            $type_name::$variant_name {
-                                $memb_id: e
-                            }
-                      }
-                }
-            )*)*)*)*
         )*
     }
 }
+
+/*
+pub trait Error: ::std::fmt::Display + ::std::fmt::Debug {
+    fn description(&self) -> &str;
+    fn cause(&self) -> Option<&Error>;
+}
+*/
+
 
