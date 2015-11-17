@@ -11,7 +11,7 @@ macro_rules! error_defs {
                 ,)*
             }
 
-            impl$(<$($generic: ::std::fmt::Debug$( + $bound$( + $extra_bound_base$(::$extra_bound_more)*)*)*),*>)* ::std::fmt::Debug for $type_name$(<$($generic),*>)* {
+            impl$(<$($generic: ::std::any::Any + ::std::fmt::Debug$( + $bound$( + $extra_bound_base$(::$extra_bound_more)*)*)*),*>)* ::std::fmt::Debug for $type_name$(<$($generic),*>)* {
                 #[allow(unused_variables)]
                 fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                     match self {
@@ -24,13 +24,17 @@ macro_rules! error_defs {
                 }
             }
 
-            impl$(<$($generic$(: $bound$( + $extra_bound_base$(::$extra_bound_more)*)*)*),*>)* ::std::fmt::Display for $type_name$(<$($generic),*>)* {
+            impl$(<$($generic: ::std::any::Any + ::std::fmt::Debug$( + $bound$( + $extra_bound_base$(::$extra_bound_more)*)*)*),*>)* ::std::fmt::Display for $type_name$(<$($generic),*>)* {
                 #[allow(unused_variables)]
                 fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                     match self {
                         $(&$type_name::$variant_name $({$(ref $memb_id),*})* => {
+                            use ::std::error::Error;
                             try!(write!(f, $short));
                             $(try!(write!(f, concat!(". ", $long) $(, $long_arg)*));)*
+                            if let Some(e) = self.cause() {
+                                try!(write!(f, " {}", e));
+                            }
                         }),*
                     }
                     Ok(())
